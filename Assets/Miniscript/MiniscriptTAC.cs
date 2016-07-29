@@ -558,7 +558,8 @@ namespace Miniscript {
 					if (seq == null) throw new RuntimeException("can't set indexed element of null");
 					if (!seq.CanSetElem()) throw new RuntimeException("can't set an indexed element in this type");
 					Value index = seqElem.index;
-					if (index is ValVar || index is ValSeqElem) index = index.Val(this);
+					if (index is ValVar || index is ValSeqElem || index is ValTemp) index = index.Val(this);
+
 					seq.SetElem(index, value);
 				} else {
 					if (lhs != null) throw new RuntimeException("not an lvalue");

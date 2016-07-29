@@ -798,7 +798,7 @@ namespace Miniscript {
 			ExpressionParsingMethod nextLevel = ParseMap;
 			Value val = nextLevel(tokens, asLval, statementStart);
 
-			if (tokens.Peek().type == Token.Type.LSquare) {
+			while (tokens.Peek().type == Token.Type.LSquare) {
 				tokens.Dequeue();	// discard '['
 				val = FullyEvaluate(val);
 
