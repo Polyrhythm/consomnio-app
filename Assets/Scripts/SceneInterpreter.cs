@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using Miniscript;
 using System.Collections.Generic;
+using System.Collections;
 
 public class SceneInterpreter : ScriptableObject
 {
@@ -73,11 +74,71 @@ public class SceneInterpreter : ScriptableObject
             ValList tris = (ValList)context.GetVar("tris");
             ValList uvs = (ValList)context.GetVar("uvs");
             ValList normals = (ValList)context.GetVar("normals");
-            ValList tangetns = (ValList)context.GetVar("tangents");
+            ValList tangents = (ValList)context.GetVar("tangents");
             GameObject meshObj = new GameObject();
             meshObj.AddComponent<MeshFilter>();
             meshObj.AddComponent<MeshRenderer>();
-            Mesh mesh = meshObj.GetComponent<MeshFilter>().sharedMesh;
+            Mesh mesh = meshObj.GetComponent<MeshFilter>().mesh;
+
+            // Create vertices list.
+            Value[] vertArray = verts.values.ToArray();
+            Vector3[] vertList = new Vector3[vertArray.Length];
+            for (int i = 0; i < vertArray.Length; i++)
+            {
+                ValMap vert = (ValMap)vertArray[i];
+                vertList[i] = new Vector3(vert["x"].FloatValue(), vert["y"].FloatValue(), vert["z"].FloatValue());
+            }
+            mesh.vertices = vertList;
+
+            // Create triangles list.
+            Value[] triArray = tris.values.ToArray();
+            int[] triList = new int[triArray.Length];
+            for (int i = 0; i < triArray.Length; i++)
+            {
+                triList[i] = triArray[i].IntValue();
+            }
+            mesh.triangles = triList;
+
+            // Create UV list.
+            Value[] uvArray = uvs.values.ToArray();
+            Vector2[] uvList = new Vector2[uvArray.Length];
+            for (int i = 0; i < uvArray.Length; i++)
+            {
+                ValMap vec = (ValMap)uvArray[i];
+                uvList[i] = new Vector2(vec["u"].FloatValue(), vec["v"].FloatValue());
+            }
+            mesh.uv = uvList;
+
+            // Create normals if provided.
+            Vector3[] normalsList;
+            if (normals != null)
+            {
+                Value[] normalsArray = normals.values.ToArray();
+                normalsList = new Vector3[vertList.Length];
+                for (int i = 0; i < normalsArray.Length; i++)
+                {
+                    ValMap normal = (ValMap)normalsArray[i];
+                    normalsList[i] = new Vector3(normal["x"].FloatValue(), normal["y"].FloatValue(), normal["z"].FloatValue()).normalized;
+                }
+
+                mesh.normals = normalsList;
+            }
+
+            Vector4[] tangentsList;
+            if (tangents != null)
+            {
+                Value[] tangentsArray = tangents.values.ToArray();
+                tangentsList = new Vector4[vertList.Length];
+                for (int i = 0; i < tangentsArray.Length; i++)
+                {
+                    ValMap vec = (ValMap)tangentsArray[i];
+                    tangentsList[i] = new Vector4(vec["x"].FloatValue(), vec["y"].FloatValue(), vec["z"].FloatValue(), vec["w"].FloatValue());
+                }
+
+                mesh.tangents = tangentsList;
+            }
+
+            sceneObjects.Add(uniqueId++, meshObj);
 
             return new Intrinsic.Result(new ValNumber(uniqueId));
         };
@@ -364,8 +425,7 @@ public class SceneInterpreter : ScriptableObject
             primitive.transform.SetParent(sceneContainer.transform);
 
             // Add new primitive to sceneObjects.
-            uniqueId += 1;
-            sceneObjects.Add(uniqueId, primitive);
+            sceneObjects.Add(uniqueId++, primitive);
 
             return new Intrinsic.Result(new ValNumber(uniqueId));
         };
