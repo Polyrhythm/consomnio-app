@@ -765,10 +765,7 @@ MonoBehaviour:
     m_LineSpacing: 1
   m_Text: "<b>classes</b>:\nShape = { \"sides\": 0 }\nSquare = new Shape\nSquare.sides
     = 4\nx = new Square\nx.sides // => 4\nShape.degrees = function(n)\n  return 180
-    * (self.sides - 2)\nend function\n\n<b>built-in functions</b>:\n// translates
-    in-game cursor\n// @params x, y, z\ntranslate()\n\n// builds a primitive cube\n//
-    @params x, y, z (scale)\nbuildCube()\n\n// clear the scene\nclear()\n\n// reset
-    cursor position\nreset()"
+    * (self.sides - 2)\nend function\n"
 --- !u!222 &944834520
 CanvasRenderer:
   m_ObjectHideFlags: 0
