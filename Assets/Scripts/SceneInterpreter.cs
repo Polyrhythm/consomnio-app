@@ -41,6 +41,7 @@ public class SceneInterpreter : ScriptableObject
         setupReset();
         setupRigidBody();
         setupGetObjectPosition();
+        setupHelp();
 
         // Scene cursor manipulation.
         setupTranslate();
@@ -53,6 +54,123 @@ public class SceneInterpreter : ScriptableObject
         setupRotateObject();
         setupScaleObject();
         setupSetParent();
+    }
+
+    void setupHelp()
+    {
+        Intrinsic help = Intrinsic.Create("help");
+        help.AddParam("topic", new ValString("default"));
+        help.code = (context, partialResult) =>
+        {
+            ValMap docs = new ValMap();
+            docs["general usage"] = new ValString("Consomnio is a live coding environment.\n" +
+                "You have access to an in-scene 'cursor' which you can translate around and build objects with." +
+                "Any objects you build (aside from procedural meshes) will be positioned at the cursor's position." +
+                "You also have access to a REPL (open by default) and a workspace. Use the REPL for immediate execution of " +
+                "single line commands and getting printed returns. Use the workspace for multi-line programs. Use the 'switch' button " +
+                "to switch between REPL and workspace. The workspace has a 'submit' button for running your code.\n\n" +
+                "Example workspace program that generates a cube of random colour in front of you\n" +
+                "clear()\n" +
+                "reset()\n" +
+                "translate({\"x\": 0, \"y\": 0, \"z\": 1.5})\n\n" +
+                "colour(rnd, rnd, rnd)\n" +
+                "myCube = buildPrimitive(\"cube\", {\"x\": 0.05, \"y\": 0.05, \"z\": 0.05})");
+
+            docs["UI"] = new ValString("Air tap the '?' button for a language quick reference.\n" +
+                "Air tap the 'Switch' button to toggle between REPL and workspace modes.\n" +
+                "Air tap the 'Submit' button to submit workspace code (if in the workspace).\n" +
+                "Ctrl-c will copy text. Ctrl-v will paste text. Holding shift and using cursor keys will highlight text.");
+
+            docs["Animation"] = new ValString("If you want things to move, I suggest using a while loop.\n" +
+                "while 1 == 1\n" +
+                "  translateObject(myCube, {\"x\": 0, \"y\": sin(time) * 0.001, \"z\": 0})\n" +
+                "  wait(1/60) // <-- you need to insert a wait or the while loop will execute more quickly than frames are being rendered.\n" +
+                "end while");
+
+            docs["rigidBody"] = new ValString("number -> bool\n" +
+                "Takes an object id (optional) and adds a ridibody to the object.\n" +
+                "If no object is specificed, it adds rigidbodies to every object in the scene.\n" +
+                "Returns a boolean indicating whether the function succeeded.\n" +
+                "rigidBody(myCube)");
+
+            docs["Language notes"] = new ValString("The sciprting language in Consomnio is a simple, object-oriented affair.\n" +
+                "It is whitespace agnostic. You are free to add comments wherever you want with '//'." +
+                "Behind the scenes, all the code you submit will hit pre-defined functions in C# which will deal directly with Unity.\n" +
+                "Unity handles all the rendering.");
+
+            docs["buildPrimitive"] = new ValString("string -> map -> string -> number\n" +
+                "Builds a primitive of the specified shape, dimensions as a vec3, and material (optional).\n" +
+                "Valid shapes are cube, sphere, plane, quad, capsule, and cylinder.\n" +
+                "Dimensions is a map representing a vec3.\n" +
+                "Material is a string and is optional. Valid materials are lambertTransparent and wireframe. Default is Unity default shader.\n" +
+                "Returns the id of the shape so you can store a reference to it.\n" +
+                "buildPrimitive(\"cube\", {\"x\": 0.05, \"y\": 0.05, \"z\": 0.05}, \"lambertTransparent\")");
+
+            docs["translate"] = new ValString("map -> map\n" +
+                "Translate the scene cursor to the specified vector. The translation is additive.\n" +
+                "Returns a map with the cursor's new position as a vec3." +
+                "translate({\"x\": 1, \"y\": 0.5, \"z\": 0}");
+
+            docs["colour"] = new ValString("number -> number -> number -> number -> map\n" +
+                "Takes RGBA values from 0 to 1 (a is optional) and sets and objects built in the future to this colour.\n" +
+                "colour(0.5, 0.2, 1)");
+
+            docs["reset"] = new ValString("Resets the scene cursor to origin, which is where your head was when you started the app.");
+
+            docs["clear"] = new ValString("Clears all objects from the scene.");
+
+            docs["rotate"] = new ValString("map -> map\n" +
+                "Takes a vec3 map and rotates the cursor by euler angles.\n" +
+                "Returns the euler angle representation of the new rotation." +
+                "rotate({\"x\": 45, \"y\": 0, \"z\": 0}");
+
+            docs["translateObject"] = new ValString("number -> map -> map\n" +
+                "Takes an object id and a vec3 map.\n" +
+                "Translates the object belonging to the given id by the given vec3.\n" +
+                "Returns a vec3 of the object's current position.\n" +
+                "translateObject(myCube, {\"x\": 1, \"y\": 0.5, \"z\": 0})");
+
+            docs["colourObject"] = new ValString("number -> number -> number -> number -> number -> map\n" +
+                "Takes an object id and R, G, B, A (optional) values as numbers between 0 and 1.\n" +
+                "Changes the object's colour.\n" +
+                "Returns a map representing the object's colour.\n" +
+                "colourObject(myCube, 0.5, 0.2, 1)");
+
+            docs["scaleObject"] = new ValString("number -> map -> map\n" +
+                "Takes an object id and a vec3 map. Scales the object given.\n" +
+                "Returns a vec3 of the scale of the object.\n" +
+                "scaleObject(myCube, {\"x\": 1.2, \"y\": 1.2, \"z\": 1.2})");
+
+            docs["rotateObject"] = new ValString("number -> map -> map\n" +
+                "Takes an object id and a vec3 map representing euler angles. Rotates the given object.\n" +
+                "returns a vec3 of euler angles of the object's rotation.\n" +
+                "rotateObject(myCube, {\"x\": 0, \"y\": 90, \"z\": 45})");
+
+            docs["buildMesh"] = new ValString("list -> list -> list -> list -> list -> number\n" +
+                "Takes lists for vertex vec3s, triangle vert indices, uv vec2s, normal vec3s (optional), and tangent vec4s (optional).\n" +
+                "Builds a procedural mesh from the given lists.\n" +
+                "Returns an id representing the new object containing the mesh.\n" +
+                "verts = range(0, 3)\n" +
+                "verts[0] = {\"x\": 0, \"y\": 0, \"z\": 1.5}\n" +
+                "... // continuing adding vertices, a tri list, and a uv list\n" +
+                "myObj = buildMesh(verts, tris, uvs)");
+
+            docs["setParent"] = new ValString("number -> number -> number\n" +
+                "Takes a object id and parent object id. Sets the object to be a child of the parent.\n" +
+                "Returns the id of the parent object.\n" +
+                "setParent(myCube, myCubeHolder)");
+
+            string[] topics = new string[docs.Count];
+            for (int i = 0; i < docs.Count; i++)
+            {
+                ValMap thing = docs.GetKeyValuePair(i);
+                topics[i] = thing["key"].ToString();
+            }
+            docs["default"] = new ValString(string.Join("\n", topics));
+            string requestedDoc = context.GetVar("topic").ToString();
+            
+            return new Intrinsic.Result(new ValString(docs[requestedDoc].ToString()));
+        };
     }
 
     void setupBuildMesh()
