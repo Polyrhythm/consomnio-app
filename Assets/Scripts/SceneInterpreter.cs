@@ -40,6 +40,7 @@ public class SceneInterpreter : ScriptableObject
         setupClear();
         setupReset();
         setupRigidBody();
+        setupDistance();
         setupGetObjectPosition();
         setupHelp();
 
@@ -54,6 +55,7 @@ public class SceneInterpreter : ScriptableObject
         setupRotateObject();
         setupScaleObject();
         setupSetParent();
+        setupUpdateVertices();
     }
 
     void setupHelp()
@@ -146,8 +148,9 @@ public class SceneInterpreter : ScriptableObject
                 "returns a vec3 of euler angles of the object's rotation.\n" +
                 "rotateObject(myCube, {\"x\": 0, \"y\": 90, \"z\": 45})");
 
-            docs["buildMesh"] = new ValString("list -> list -> list -> list -> list -> number\n" +
-                "Takes lists for vertex vec3s, triangle vert indices, uv vec2s, normal vec3s (optional), and tangent vec4s (optional).\n" +
+            docs["buildMesh"] = new ValString("list -> list -> list -> list -> list -> string -> number\n" +
+                "Takes lists for vertex vec3s, triangle vert indices, uv vec2s, normal vec3s (optional), tangent vec4s (optional), and material\n" +
+                "Possible material value other than default is \"uvTest\"\n" +
                 "Builds a procedural mesh from the given lists.\n" +
                 "Returns an id representing the new object containing the mesh.\n" +
                 "verts = range(0, 3)\n" +
@@ -173,6 +176,32 @@ public class SceneInterpreter : ScriptableObject
         };
     }
 
+    void setupUpdateVertices()
+    {
+        Intrinsic updateVertices = Intrinsic.Create("updateVertices");
+        updateVertices.AddParam("id");
+        updateVertices.AddParam("verts");
+        updateVertices.code = (context, partialResult) =>
+        {
+            int id = context.GetVar("id").IntValue();
+            GameObject meshObj = sceneObjects[id];
+            Mesh mesh = meshObj.GetComponent<MeshFilter>().mesh;
+            ValList verts = (ValList)context.GetVar("verts");
+
+            // Create vertices list.
+            Value[] vertArray = verts.values.ToArray();
+            Vector3[] vertList = new Vector3[vertArray.Length];
+            for (int i = 0; i < vertArray.Length; i++)
+            {
+                ValMap vert = (ValMap)vertArray[i];
+                vertList[i] = new Vector3(vert["x"].FloatValue(), vert["y"].FloatValue(), vert["z"].FloatValue());
+            }
+            mesh.vertices = vertList;
+
+            return new Intrinsic.Result(new ValNumber(id));
+        };
+    }
+
     void setupBuildMesh()
     {
         Intrinsic buildMesh = Intrinsic.Create("buildMesh");
@@ -186,6 +215,7 @@ public class SceneInterpreter : ScriptableObject
         buildMesh.AddParam("normals");
         // List of vec4.
         buildMesh.AddParam("tangents");
+        buildMesh.AddParam("material", new ValString(""));
         buildMesh.code = (context, partialResult) =>
         {
             ValList verts = (ValList)context.GetVar("verts");
@@ -197,6 +227,19 @@ public class SceneInterpreter : ScriptableObject
             meshObj.AddComponent<MeshFilter>();
             meshObj.AddComponent<MeshRenderer>();
             Mesh mesh = meshObj.GetComponent<MeshFilter>().mesh;
+            MeshRenderer renderer = meshObj.GetComponent<MeshRenderer>();
+
+            string mat = context.GetVar("material").ToString();
+            Material meshMat;
+            switch (mat)
+            {
+                case "testUV":
+                    meshMat = Materials.Instance.testUV;
+                    break;
+                default:
+                    meshMat = Materials.Instance.standardMaterial;
+                    break;
+            }
 
             // Create vertices list.
             Value[] vertArray = verts.values.ToArray();
@@ -256,7 +299,11 @@ public class SceneInterpreter : ScriptableObject
                 mesh.tangents = tangentsList;
             }
 
-            sceneObjects.Add(uniqueId++, meshObj);
+            // Assign a material;
+            renderer.material = meshMat;
+
+            uniqueId = uniqueId + 1;
+            sceneObjects.Add(uniqueId, meshObj);
 
             return new Intrinsic.Result(new ValNumber(uniqueId));
         };
@@ -543,7 +590,8 @@ public class SceneInterpreter : ScriptableObject
             primitive.transform.SetParent(sceneContainer.transform);
 
             // Add new primitive to sceneObjects.
-            sceneObjects.Add(uniqueId++, primitive);
+            uniqueId = uniqueId + 1;
+            sceneObjects.Add(uniqueId, primitive);
 
             return new Intrinsic.Result(new ValNumber(uniqueId));
         };

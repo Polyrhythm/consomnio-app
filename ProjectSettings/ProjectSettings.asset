@@ -343,24 +343,24 @@ PlayerSettings:
   psmSplashimage: {fileID: 0}
   spritePackerPolicy: 
   scriptingDefineSymbols: {}
-  metroPackageName: repl
+  metroPackageName: consomnio
   metroPackageVersion: 0.0.0.1
   metroCertificatePath: Assets\WSATestCertificate.pfx
   metroCertificatePassword: 
   metroCertificateSubject: preeper studios
   metroCertificateIssuer: preeper studios
   metroCertificateNotAfter: 806b13e9b7fed201
-  metroApplicationDescription: repl
+  metroApplicationDescription: holographic live coding
   wsaImages: {}
   metroTileShortName: consomnio
   metroCommandLineArgsFile: 
   metroTileShowName: 0
-  metroMediumTileShowName: 0
-  metroLargeTileShowName: 0
-  metroWideTileShowName: 0
+  metroMediumTileShowName: 1
+  metroLargeTileShowName: 1
+  metroWideTileShowName: 1
   metroDefaultTileSize: 1
   metroTileForegroundText: 1
-  metroTileBackgroundColor: {r: 0.13333334, g: 0.17254902, b: 0.21568628, a: 0}
+  metroTileBackgroundColor: {r: 0.7941176, g: 0.08758649, b: 0.5992124, a: 0}
   metroSplashScreenBackgroundColor: {r: 0.12941177, g: 0.17254902, b: 0.21568628,
     a: 1}
   metroSplashScreenUseBackgroundColor: 0
