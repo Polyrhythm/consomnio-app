@@ -11,7 +11,7 @@ public class SceneInterpreter : ScriptableObject
     private Vector3 cursorStartPos;
     private Color currentColor = Color.white;
     private Vector3 currentRotation = new Vector3(0, 0, 0);
-    private int uniqueId = 0;
+    private int uniqueId = 1;
 
     private Dictionary<int, GameObject> sceneObjects;
 
@@ -26,6 +26,7 @@ public class SceneInterpreter : ScriptableObject
         cursorStartPos = sceneContainer.transform.position;
 
         sceneObjects = new Dictionary<int, GameObject>();
+        sceneObjects.Add(0, Camera.main.gameObject);
 
         return this;
     }
@@ -43,6 +44,7 @@ public class SceneInterpreter : ScriptableObject
         setupDistance();
         setupGetObjectPosition();
         setupHelp();
+        setupPerlinNoise();
 
         // Scene cursor manipulation.
         setupTranslate();
@@ -77,6 +79,9 @@ public class SceneInterpreter : ScriptableObject
                 "translate({\"x\": 0, \"y\": 0, \"z\": 1.5})\n\n" +
                 "colour(rnd, rnd, rnd)\n" +
                 "myCube = buildPrimitive(\"cube\", {\"x\": 0.05, \"y\": 0.05, \"z\": 0.05})");
+
+            docs["Camera"] = new ValString("The camera will always have an id of 0. Use that id\n" +
+                "with functions that take a game object id to utilize the camera.");
 
             docs["UI"] = new ValString("Air tap the '?' button for a language quick reference.\n" +
                 "Air tap the 'Switch' button to toggle between REPL and workspace modes.\n" +
@@ -163,6 +168,17 @@ public class SceneInterpreter : ScriptableObject
                 "Returns the id of the parent object.\n" +
                 "setParent(myCube, myCubeHolder)");
 
+            docs["perlinNoise"] = new ValString("number -> number -> number\n" +
+                "Takes an x float value and a y float value.\n" +
+                "Returns a float between 0.0 and 1.0 based on Perlin Noise.\n" +
+                "If no coordinates are supplied, random values are used.\n" +
+                "perlinNoise(0.4, 0.02)");
+
+            docs["distance"] = new ValString("map -> map -> number\n" +
+                "Takes two vectors representing positions.\n" +
+                "Returns a float distance between the vectors.\n" +
+                "distance(getPosition(objOne), getPosition(objTwo))");
+
             string[] topics = new string[docs.Count];
             for (int i = 0; i < docs.Count; i++)
             {
@@ -173,6 +189,19 @@ public class SceneInterpreter : ScriptableObject
             string requestedDoc = context.GetVar("topic").ToString();
             
             return new Intrinsic.Result(new ValString(docs[requestedDoc].ToString()));
+        };
+    }
+
+    void setupPerlinNoise()
+    {
+        Intrinsic perlinNoise = Intrinsic.Create("perlinNoise");
+        perlinNoise.AddParam("x", new ValNumber(Random.Range(0.0f, 1.0f)));
+        perlinNoise.AddParam("y", new ValNumber(Random.Range(0.0f, 1.0f)));
+        perlinNoise.code = (context, partialResult) =>
+        {
+            float result = Mathf.PerlinNoise(context.GetVar("x").FloatValue(), context.GetVar("y").FloatValue());
+
+            return new Intrinsic.Result(new ValNumber(result));
         };
     }
 
@@ -330,7 +359,7 @@ public class SceneInterpreter : ScriptableObject
 
     void setupGetObjectPosition()
     {
-        Intrinsic getObjectPosition = Intrinsic.Create("getObjectPosition");
+        Intrinsic getObjectPosition = Intrinsic.Create("getPosition");
         getObjectPosition.AddParam("objId");
         getObjectPosition.code = (context, partialResult) =>
         {
@@ -605,11 +634,13 @@ public class SceneInterpreter : ScriptableObject
             for (int i = sceneContainer.transform.childCount - 1; i >= 0; i--)
             {
                 GameObject child = sceneContainer.transform.GetChild(i).gameObject;
+                Destroy(child.GetComponent<MeshFilter>().mesh);
                 Destroy(child);
             }
 
             sceneObjects.Clear();
-            uniqueId = 0;
+            sceneObjects.Add(0, Camera.main.gameObject);
+            uniqueId = 1;
 
             return new Intrinsic.Result(ValNumber.Truth(true));
         };
